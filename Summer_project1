@@ -1,0 +1,28 @@
+library(foreign)
+path = 'C:/Users/ngu09790/OneDrive - Texas Tech University/Summer_Project/2012 NHIS Adult Sample_CAM_HIT paper 2017-2-17.sav'
+data = read.spss(path, to.data.frame = TRUE)
+
+Invest_data = data[,c('TP1_REC1', 'TP1_REC2', 'TP1_REC3', 'TP1_REC4','ALT_TP31', 'ALT_TP32', 'ALT_TP33' )]
+dropna_data = na.omit(Invest_data)
+
+for (i in colnames(dropna_data)){
+dropna_data[i] = as.numeric(unlist(dropna_data[i]))
+}
+
+dropna_data = na.omit(Invest_data)
+
+### Categorical Encoding dataset
+
+for (i in colnames(dropna_data)){
+  dropna_data[i] = as.numeric(unlist(dropna_data[i]))
+}
+
+
+one.matrix = matrix(c(rep(0,16)),nrow=4,ncol=16)
+two.matrix = matrix(c(rep(0,16)),nrow=4,ncol=16)
+for (i in 4){
+  for (j in 3){
+    one.matrix[i,] = one.matrix[i,]+ table(dropna_data[,i],dropna_data[,i+j])[1,]
+    two.matrix[i,] = two.matrix[i,] + table(dropna_data[,i],dropna_data[,i+j])[2,]
+  }
+  }
