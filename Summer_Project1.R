@@ -64,25 +64,24 @@ for (i in 1:4){
   # the grand total proportion of yeses and nos for the ith value of TP_REC
   yp_i = yn_i / 2091
   np_i = nn_i / 2091
-}
-for (j in 1:3){
+
+  for (j in 1:16){
   
 }
 }
 
+# Create two 1x16 matrices to store freq and probabilities of each jth therapies
 j_count=matrix(0,nrow=1,ncol=16)
+j_count_prob=matrix(0,nrow=1,ncol=16)
+# Iterate through 2091 observations to calculate each jth proba
 for (indi in c(1:2019)){
-  for (j in ATL_dropna[indi,13:15]){
+  for (j in ATL_dropna[indi,13]){
     j_count[1,j] = j_count[1,j] + 1
   }
 }
-j_count = j_count / 2091
+j_count_prob = j_count / 2091
 
 
-
-for (i in ATL_dropna[1,13:15]){
-  print(i)
-}
 
 
 
