@@ -46,19 +46,44 @@ for (i in colnames(ATL_dropna)){
 filter = which(ATL_dropna[,1:12] == 1, arr.ind=TRUE)
 filter.df = as.data.frame(filter)
 n = dim(ATL_dropna)[1]
+p_dot_i = 0
 for (i in 1:4){
+  nn_i = 0
+  yn_i = 0
+  for (indi in c(1:2091)){
+    # Need to refine missing data later
+    # For now the denumerator will equal 3
+    yni_denumerator = 3
+    # calculate the number of yes corresponding to the ith value of TP_REC for each individual
+    yni_numerator=sum(c(i,i+4,i+8) %in% which(ATL_dropna[indi,1:12]==1))
+    nni_numerator=sum(c(i,i+4,i+8) %in% which(ATL_dropna[indi,1:12]==2))
+    # Calculate the proportion of yes and nos corresponding to the ith value of TP_REC for each individual
+    yn_i = yn_i + (yni_numerator / yni_denumerator)
+    nn_i = nn_i + (nni_numerator / yni_denumerator)
+  }
+  # the grand total proportion of yeses and nos for the ith value of TP_REC
+  yp_i = yn_i / 2091
+  np_i = nn_i / 2091
+}
+for (j in 1:3){
   
-  for (j in 1:3){
-    
+}
+}
+
+j_count=matrix(0,nrow=1,ncol=16)
+for (indi in c(1:2019)){
+  for (j in ATL_dropna[indi,13:15]){
+    j_count[1,j] = j_count[1,j] + 1
   }
 }
+j_count = j_count / 2091
 
 
-for (i in ATL_dropna[1,1:12]){
+
+for (i in ATL_dropna[1,13:15]){
   print(i)
 }
-count = 0
-for (i in unique(filter.df$row)){
-  count = count +1
-  print(max(filter.df[filter.df$row==i,]$col))
-}
+
+
+
+

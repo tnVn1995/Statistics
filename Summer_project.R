@@ -46,21 +46,25 @@ for (i in colnames(ATL_dropna)){
 filter = which(ATL_dropna[,1:12] == 1, arr.ind=TRUE)
 filter.df = as.data.frame(filter)
 n = dim(ATL_dropna)[1]
+p_dot_i = 0
 for (i in 1:4){
-  p_i = 0
+  nn_i = 0
+  yn_i = 0
   for (indi in c(1:2091)){
-  if (max(which(ATL_dropna[indi,1:12]==1)) >= 9){
-    pi_denumerator = 3
-    }
-  else if (5 <= max(which(ATL_dropna[indi,1:12]==1)) < 9){
-    pi_denumerator = 2
-    }
-  else {
-    pi_denumerator = 1
+  # Need to refine missing data later
+  # For now the denumerator will equal 3
+  yni_denumerator = 3
+  # calculate the number of yes corresponding to the ith value of TP_REC for each individual
+  yni_numerator=sum(c(i,i+4,i+8) %in% which(ATL_dropna[indi,1:12]==1))
+  nni_numerator=sum(c(i,i+4,i+8) %in% which(ATL_dropna[indi,1:12]==2))
+  # Calculate the proportion of yes and nos corresponding to the ith value of TP_REC for each individual
+  yn_i = yn_i + (yni_numerator / yni_denumerator)
+  nn_i = nn_i + (nni_numerator / yni_denumerator)
   }
-  pi_numerator=sum(c(i,i+4,i+8) %in% which(ATL_dropna[indi,1:12]==1))
-  p_i = p_i + (pi_numerator / pi_denumerator)  
-  }
+  # the grand total proportion of yeses and nos for the ith value of TP_REC
+  yp_i = yn_i / 2091
+  np_i = nn_i / 2091
+}
   for (j in 1:3){
     
   }
