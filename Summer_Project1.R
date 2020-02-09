@@ -115,22 +115,22 @@ for (i in 1:4){
 return(sum(n*ygrand_stats,n*ngrand_stats))
 }
 #Bootstrap method to calculate p_value (resample 1999 times)
-cal_p_boot = function(data, X, B.max=1999){
-  stat = cal_X_squ(data=data)
+cal_p_boot = function(data, X, B.max=1999, FUN=cal_X_squ){
+  stat = FUN(data=data)
   X.sq.S.star = numeric(length(B.max))
   counter = 0
   b = 0
   while(b <= B.max){
-  b = b+1
-  n = dim(data)[1]
-  end = dim(data)[2]
-  W = sample(x=1:n,size=n,replace=TRUE)
-  Y = sample(x=1:n,size=n,replace = TRUE)
-  data.star = cbind(data[W,1:X],data[Y,(X+1):end])
-  stat.star = cal_X_squ(data.star)
-  
-  counter = counter + 1
-  X.sq.S.star[counter] = stat.star
+    b = b+1
+    n = dim(data)[1]
+    end = dim(data)[2]
+    W = sample(x=1:n,size=n,replace=TRUE)
+    Y = sample(x=1:n,size=n,replace = TRUE)
+    data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+    stat.star = FUN(data.star)
+    
+    counter = counter + 1
+    X.sq.S.star[counter] = stat.star
   }
   p.value.boot = mean(X.sq.S.star >= stat)
   return(list(p_value=p.value.boot, X.sq=X.sq.S.star))
@@ -169,7 +169,7 @@ ordery1 = ordery[sample(nrow(ordery)),]
 ordery2 = cbind(ordery1, cumsum(ordery1[,2])) 
 
 
-#----
+#-------------------------------------
 # Simulate data using computed marginal probabilities
 simulated_data = matrix(NA, nrow=500, ncol=6)
 colnames(simulated_data) = c('W1','W2','Y11','Y12','Y21','Y22')
@@ -229,9 +229,10 @@ generate_cluster = function(probw,proby, data, Uw, Uy1, Uy2, i, pos1, pos2, row)
    data = generate_y(proby, data, Uy2, row=i, pos2)
   }
   return (data)
-} 
+}
+simulate_data = function(n=500){
 count = 0
-while (count < 500){
+while (count < n){
   Uw = runif(1, 0, 1)
   Uy1 = runif(1, 0, 1)
   Uy2 = runif(1, 0, 1)
@@ -240,5 +241,6 @@ while (count < 500){
 }
 # Change the order of columns to reflect the true order of the data due to the way Y's were generated
 simulated_data[,c(1,2,3,4,5,6)] = simulated_data[,c(1,2,3,5,4,6)]
+}
 
-
+simulated_data = simulate_data()
