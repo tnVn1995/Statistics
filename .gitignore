@@ -1,2 +1,8 @@
 #Ignore all .sav file
 *.sav
+*.png
+*.zip
+*.pptx
+*.pdf
+*.csv
+*.Rhistory
