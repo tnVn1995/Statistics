@@ -115,8 +115,8 @@ for (i in 1:4){
 return(sum(n*ygrand_stats,n*ngrand_stats))
 }
 #Bootstrap method to calculate p_value (resample 1999 times)
-cal_p_boot = function(data, X, B.max=1999){
-  stat = cal_X_squ(data=data)
+cal_p_boot = function(data, X, B.max=1999, FUN=cal_X_squ){
+  stat = FUN(data=data)
   X.sq.S.star = numeric(length(B.max))
   counter = 0
   b = 0
@@ -127,7 +127,7 @@ cal_p_boot = function(data, X, B.max=1999){
   W = sample(x=1:n,size=n,replace=TRUE)
   Y = sample(x=1:n,size=n,replace = TRUE)
   data.star = cbind(data[W,1:X],data[Y,(X+1):end])
-  stat.star = cal_X_squ(data.star)
+  stat.star = FUN(data.star)
   
   counter = counter + 1
   X.sq.S.star[counter] = stat.star
@@ -242,3 +242,28 @@ while (count < 500){
 simulated_data[,c(1,2,3,4,5,6)] = simulated_data[,c(1,2,3,5,4,6)]
 
 
+cal_p_boot = function(data, X, B.max=1999, FUN=cal_X_squ){
+  stat = FUN(data=data)
+  X.sq.S.star = numeric(length(B.max))
+  counter = 0
+  b = 0
+  while(b <= B.max){
+    b = b+1
+    n = dim(data)[1]
+    end = dim(data)[2]
+    W = sample(x=1:n,size=n,replace=TRUE)
+    Y = sample(x=1:n,size=n,replace = TRUE)
+    data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+    stat.star = FUN(data.star)
+    
+    counter = counter + 1
+    X.sq.S.star[counter] = stat.star
+  }
+  p.value.boot = mean(X.sq.S.star >= stat)
+  return(list(p_value=p.value.boot, X.sq=X.sq.S.star))
+}
+dataprocess_stg2 = function(data){
+  #' @description return nan for the Y variable if individuals who don't specify their W's choice
+    
+  }
+}
