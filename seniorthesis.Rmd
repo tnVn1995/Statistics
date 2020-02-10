@@ -121,6 +121,7 @@ generate_cluster = function(probw,proby, data, Uw, Uy1, Uy2, i, pos1, pos2, row)
   return (data)
 }
 
+# Simulating Data for Experiment
 simulate_data = function(n=500){
 count = 0
 while (count < n){
@@ -141,85 +142,108 @@ print(simulated_data[1:5,])
 # Save simulated data to file
 write.csv(simulated_data, file = 'simulated_data.csv', row.names = FALSE)
 ```
+# Generating bootstrapping data
+```{r, include=FALSE}
+data = simulated_data
+X = 2
+n = dim(data)[1]
+end = dim(data)[2]
+W = sample(x=1:n,size=n,replace=TRUE)
+Y = sample(x=1:n,size=n,replace = TRUE)
+data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+# Turn all w's answers of zero into nan-values
+zeros = which(data.star[,c(1,2)] == 0, arr.ind = TRUE)
+
+```
+
+```{r}
+library(data.table)
+data.nonan = copy(data.star)
+data.nonan[zeros[,1],(therap+1+(zeros[,2]-1)*rec):(therap+ zeros[,2]*rec)] = NA
+print(data.nonan[1:10,])
+cat('\n\n\n\n')
+print(data.star[1:10,])
+```
+
+
 # Calculate results using formulas:
 
 $X^2_{M} = n \sum^r_{i=1}\sum^c_{j=1}\frac{(\bar \pi_{ij} - \bar \pi_{i.} \bar\pi_{.j})^2}{\bar \pi_{i.} \bar\pi_{.j}}$
 
+## Calculate $\pi_{ij}$ and $pi_{.i}$
 ```{r}
-# Calculate pi_ij, pi_i.
-i_count= matrix(0, nrow=1, ncol=therap)
-ij_count = matrix(0, nrow=therap, ncol = rec)
-notij_count = matrix(0, nrow=therap, ncol = rec)
+## Calculate pi_ij, pi_i., pi_.j
+therap = 2
+rec = 2
+therap=therap
+rec=rec
+n=500
 
-for (indi in 1:n){
-  for (i in 1:therap){
-    if (data[indi,i]==0)
-      next
-    else {
-      # Counting the number of individuals who pick jth therapy to calculate pi_.i
-      i_count[,i] = i_count[,i] + 1
-      # Iterating through each therapy, count the participants who pick the jth recommendation to calculate pi_ij
-      for (j in 1:rec){
-        if (data[indi,therap+i+(j-1)*rec]==1){
-          ij_count[i,j] = ij_count[i,j] + 1
-        }
-        else {
-          notij_count[i,j] = notij_count[i,j] + 1
-          # Remember to check to sum of ij_count 
-        }
-        
-      }
-      
-    }
-  }
-}
-
-#----
-count1s = matrix(0.00, nrow=1,ncol=100)
-# for (count1 in 1:100){
-getij = function(data, therap, rec){
+y_ij = matrix(0, nrow=therap, ncol=rec)
+n_ij = matrix(0, nrow=therap, ncol=rec)
+y_nj = matrix(0,nrow=1,ncol=rec)
+n_nj = matrix(0,nrow=1,ncol=rec)
+pi_ij = function(data, therap, rec){
   i_count1= matrix(0, nrow=1, ncol=therap)
   ij_count1 = matrix(0, nrow=therap, ncol = rec)
   notij_count1 = matrix(0, nrow=therap, ncol = rec)
 # start2 = proc.time()
 for (i in 1:therap){
-  i_count1[,i] = length(which(data[,i]==1))
-  yind = which(data[,i]==1)
+  yindx = which(data[,i]==1)
+  i_count1[,i] = length(yindx)
+
   for (j in 1:rec){
-  for (yindi in yind){
+  for (yindi in yindx){
         if (data[yindi,therap+i+(j-1)*rec]==1){
           ij_count1[i,j] = ij_count1[i,j] + 1
         }
     else{
         notij_count1[i,j] = notij_count1[i,j] + 1
     }
-      }
-      }
+    ycond = data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1
+    ncond = data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==0
+    # the numerator is the number of y's or no's
+    ynj_numerator = sum(ycond[which(!is.na(ycond))])
+    nnj_numerator = sum(ncond[which(!is.na(ncond))])
+    assert('should not be nan values', !is.na(ynj_numerator))
+    assert('Should not be nan values', !is.na(nnj_numerator))
+    assert("Your .j count is not correct!", ynj_numerator + nnj_numerator == y_denominator)
+    if (){
+    # Count the individuals who specify their jth recommendation source choice
+    y_nj[,j] = y_nj[,j] + ynj_numerator / y_denominator
+    n_nj[,j] = n_nj[,j] + nnj_numerator / y_denominator
     }
-return(list(i_count=i_count1, ij_count=ij_count1, notij_count=notij_count1))
+  }
+    }
 }
-end2 = proc.time()
-# print((end1-start1)[3])
-# count1s[,count1] = (end2-start2)[3]
-# }
+return(list(i_count=i_count1, ij_count=ij_count1, notij_count=notij_count1, Ws=yind))
+}
+yindi = 2
+j = 1
+cat(data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1)
 
-###------------------------------------------------------------------------------------------
+```
+
+```{r}
+### Calculate pi_.j
+## Initialize variables with res = pi_ij(data, therap, rec)
 therap = 2
 rec = 2
 therap=therap
 rec=rec
 n=500
+
 y_ij = matrix(0, nrow=therap, ncol=rec)
 n_ij = matrix(0, nrow=therap, ncol=rec)
 y_nj = matrix(0,nrow=1,ncol=rec)
 n_nj = matrix(0,nrow=1,ncol=rec)
-for (indi in 1:n){
-y_denominator = sum(data[indi,1:therap]==1)
-#assert("Cannot be zero", y_denominator != 0)
-if (y_denominator == 0){
-  next()
+for (i in 1:therap){
+# y_denominator = sum(data[indi,1:therap]==1)
+# #assert("Cannot be zero", y_denominator != 0)
+# if (y_denominator == 0){
+#   next()
+  yind = which(data[,i]==1)
 }
-else {
   for (j in 1:rec){
     # Count the individuals who pick jth recommendation source
     # Only count when that individual specifies their ith therapy pick
@@ -236,8 +260,11 @@ else {
     y_nj[,j] = y_nj[,j] + ynj_numerator / y_denominator
     n_nj[,j] = n_nj[,j] + nnj_numerator / y_denominator
   }
-}
-}
+
+```
+
+
+```{r}
 ###------------------------------------------------------------------------------------------
 temp_X_cal= function(data, therap, rec){
   # In this dataset, 1 means yes and 0 means no
@@ -323,23 +350,22 @@ temp_X_cal= function(data, therap, rec){
 
 ```{r} 
 ### Need to parallelize the codes here
-cal_p_boot = function(data, X, B.max=1999){
-  stat = cal_X_squ(data=data)
+cal_p_boot = function(data, X, B.max=1999, FUN=cal_X_squ){
+  stat = FUN(data=data)
   X.sq.S.star = numeric(length(B.max))
   counter = 0
   b = 0
-  # Iterate through B.max times to derive p-value
   while(b <= B.max){
-  b = b+1
-  n = dim(data)[1]
-  end = dim(data)[2]
-  W = sample(x=1:n,size=n,replace=TRUE)
-  Y = sample(x=1:n,size=n,replace = TRUE)
-  data.star = cbind(data[W,1:X],data[Y,(X+1):end])
-  stat.star = cal_X_squ(data.star)
-  
-  counter = counter + 1
-  X.sq.S.star[counter] = stat.star
+    b = b+1
+    n = dim(data)[1]
+    end = dim(data)[2]
+    W = sample(x=1:n,size=n,replace=TRUE)
+    Y = sample(x=1:n,size=n,replace = TRUE)
+    data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+    stat.star = FUN(data.star)
+    
+    counter = counter + 1
+    X.sq.S.star[counter] = stat.star
   }
   p.value.boot = mean(X.sq.S.star >= stat)
   return(list(p_value=p.value.boot, X.sq=X.sq.S.star))

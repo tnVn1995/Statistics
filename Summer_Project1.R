@@ -243,9 +243,7 @@ while (count < n){
 simulated_data[,c(1,2,3,4,5,6)] = simulated_data[,c(1,2,3,5,4,6)]
 }
 
-<<<<<<< HEAD
 simulated_data = simulate_data()
-=======
 
 cal_p_boot = function(data, X, B.max=1999, FUN=cal_X_squ){
   stat = FUN(data=data)
@@ -271,5 +269,4 @@ dataprocess_stg2 = function(data){
   #' @description return nan for the Y variable if individuals who don't specify their W's choice
     
   }
-}
->>>>>>> c33e67f9c7c6db2b020c3dc4ad13449d3000f7b1
+
