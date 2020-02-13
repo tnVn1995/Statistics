@@ -155,15 +155,9 @@ data.star = cbind(data[W,1:X],data[Y,(X+1):end])
 zeros = which(data.star[,c(1,2)] == 0, arr.ind = TRUE)
 zeros[1:10,]
 ```
-```{r}
-data.star[7, c((therap+zeros[7,2]),(therap+zeros[7,2]+2))]
-data.star[300:310,]
-```
-```{r}
-data.nonan[data.nonan[,'W1']==0, c(3,5)]
-```
 
-```{r}
+
+```{r Handling Zero Values}
 # Turn corresponding values o Y for W answer of 0's into nan
 library(data.table)
 therap = 2
@@ -185,7 +179,19 @@ print(data.nonan[1:10,])
 $X^2_{M} = n \sum^r_{i=1}\sum^c_{j=1}\frac{(\bar \pi_{ij} - \bar \pi_{i.} \bar\pi_{.j})^2}{\bar \pi_{i.} \bar\pi_{.j}}$
 
 ## Calculate $\pi_{ij}$ and $pi_{.i}$
-```{r}
+```{r calculate pi_ij, and pi_.i vectorize}
+ij_count = matrix(0, nrow=2, ncol=2)
+get_ij = function(){
+ij_count[1,1] = dim(data[(data[,1]==1 & data[,3]==1)|(data[,1]==1&is.na(data[,3])),])
+ij_count[1,2] = dim(data[(data[,1]==1 & data[,5]==1)|(data[,1]==1&is.na(data[,5])),])
+ij_count[2,1] = dim(data[(data[,2]==1 & data[,4]==1)|(data[,2]==1&is.na(data[,4])),])
+ij_count[2,2] = dim(data[(data[,2]==1 & data[,6]==1)|(data[,2]==1&is.na(data[,6])),])
+return (ij_count)
+}
+system.time(get_ij)
+```
+
+```{r calculate pi_ij, and pi_.i loop}
 ## Calculate pi_ij, pi_i., pi_.j
 therap = 2
 rec = 2
@@ -197,11 +203,11 @@ y_ij = matrix(0, nrow=therap, ncol=rec)
 n_ij = matrix(0, nrow=therap, ncol=rec)
 y_nj = matrix(0,nrow=1,ncol=rec)
 n_nj = matrix(0,nrow=1,ncol=rec)
-pi_ij = function(data, therap, rec){
-  i_count1= matrix(0, nrow=1, ncol=therap)
-  ij_count1 = matrix(0, nrow=therap, ncol = rec)
-  notij_count1 = matrix(0, nrow=therap, ncol = rec)
-# start2 = proc.time()
+
+i_count1= matrix(0, nrow=1, ncol=therap)
+ij_count1 = matrix(0, nrow=therap, ncol = rec)
+notij_count1 = matrix(0, nrow=therap, ncol = rec)
+system.time(
 for (i in 1:therap){
   yindx = which(data[,i]==1)
   i_count1[,i] = length(yindx)
@@ -214,24 +220,24 @@ for (i in 1:therap){
     else{
         notij_count1[i,j] = notij_count1[i,j] + 1
     }
-    ycond = data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1
-    ncond = data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==0
-    # the numerator is the number of y's or no's
-    ynj_numerator = sum(ycond[which(!is.na(ycond))])
-    nnj_numerator = sum(ncond[which(!is.na(ncond))])
-    assert('should not be nan values', !is.na(ynj_numerator))
-    assert('Should not be nan values', !is.na(nnj_numerator))
-    assert("Your .j count is not correct!", ynj_numerator + nnj_numerator == y_denominator)
-    if (){
-    # Count the individuals who specify their jth recommendation source choice
-    y_nj[,j] = y_nj[,j] + ynj_numerator / y_denominator
-    n_nj[,j] = n_nj[,j] + nnj_numerator / y_denominator
+    # ycond = data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1
+    # ncond = data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==0
+    # # the numerator is the number of y's or no's
+    # ynj_numerator = sum(ycond[which(!is.na(ycond))])
+    # nnj_numerator = sum(ncond[which(!is.na(ncond))])
+    # assert('should not be nan values', !is.na(ynj_numerator))
+    # assert('Should not be nan values', !is.na(nnj_numerator))
+    # assert("Your .j count is not correct!", ynj_numerator + nnj_numerator == y_denominator)
+    # if (){
+    # # Count the individuals who specify their jth recommendation source choice
+    # y_nj[,j] = y_nj[,j] + ynj_numerator / y_denominator
+    # n_nj[,j] = n_nj[,j] + nnj_numerator / y_denominator
     }
   }
     }
-}
-return(list(i_count=i_count1, ij_count=ij_count1, notij_count=notij_count1, Ws=yind))
-}
+)
+# return(list(i_count=i_count1, ij_count=ij_count1, notij_count=notij_count1, Ws=yind))
+# }
 yindi = 2
 j = 1
 cat(data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1)
