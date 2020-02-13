@@ -143,7 +143,7 @@ print(simulated_data[1:5,])
 write.csv(simulated_data, file = 'simulated_data.csv', row.names = FALSE)
 ```
 # Generating bootstrapping data
-```{r, include=FALSE}
+```{r, echo=FALSE}
 data = simulated_data
 X = 2
 n = dim(data)[1]
@@ -153,17 +153,31 @@ Y = sample(x=1:n,size=n,replace = TRUE)
 data.star = cbind(data[W,1:X],data[Y,(X+1):end])
 # Turn all w's answers of zero into nan-values
 zeros = which(data.star[,c(1,2)] == 0, arr.ind = TRUE)
-
+zeros[1:10,]
+```
+```{r}
+data.star[7, c((therap+zeros[7,2]),(therap+zeros[7,2]+2))]
+data.star[300:310,]
+```
+```{r}
+data.nonan[data.nonan[,'W1']==0, c(3,5)]
 ```
 
 ```{r}
+# Turn corresponding values o Y for W answer of 0's into nan
 library(data.table)
+therap = 2
+rec = 2
 data.nonan = copy(data.star)
-data.nonan[zeros[,1],(therap+1+(zeros[,2]-1)*rec):(therap+ zeros[,2]*rec)] = NA
+cat('Non-processed data\n')
 print(data.nonan[1:10,])
 cat('\n\n\n\n')
-print(data.star[1:10,])
+data.nonan[data.nonan[,'W1']==0, c(3,5)] = NA
+data.nonan[data.nonan[,'W2']==0, c(4,6)] = NA
+cat('Processed data\n')
+print(data.nonan[1:10,])
 ```
+
 
 
 # Calculate results using formulas:
