@@ -140,11 +140,12 @@ simulated_data = simulate_data()
 cat('The first five rows of simulated data:\n\n')
 print(simulated_data[1:5,])
 # Save simulated data to file
-write.csv(simulated_data, file = 'simulated_data.csv', row.names = FALSE)
+write.csv(simulated_data, file = './simulated_data.csv', row.names = FALSE)
 ```
 # Generating bootstrapping data
 ```{r, echo=FALSE}
-data = simulated_data
+library(data.table)
+data = copy(simulated_data)
 X = 2
 n = dim(data)[1]
 end = dim(data)[2]
@@ -159,17 +160,15 @@ zeros[1:10,]
 
 ```{r Handling Zero Values}
 # Turn corresponding values o Y for W answer of 0's into nan
-library(data.table)
 therap = 2
 rec = 2
-data.nonan = copy(data.star)
 cat('Non-processed data\n')
-print(data.nonan[1:10,])
+print(data.star[1:10,])
 cat('\n\n\n\n')
-data.nonan[data.nonan[,'W1']==0, c(3,5)] = NA
-data.nonan[data.nonan[,'W2']==0, c(4,6)] = NA
+data.star[data.star[,'W1']==0, c(3,5)] = NA
+data.star[data.star[,'W2']==0, c(4,6)] = NA
 cat('Processed data\n')
-print(data.nonan[1:10,])
+print(data.star[1:10,])
 ```
 
 
@@ -180,16 +179,47 @@ $X^2_{M} = n \sum^r_{i=1}\sum^c_{j=1}\frac{(\bar \pi_{ij} - \bar \pi_{i.} \bar\p
 
 ## Calculate $\pi_{ij}$ and $pi_{.i}$
 ```{r calculate pi_ij, and pi_.i vectorize}
-ij_count = matrix(0, nrow=2, ncol=2)
-get_ij = function(){
-ij_count[1,1] = dim(data[(data[,1]==1 & data[,3]==1)|(data[,1]==1&is.na(data[,3])),])
-ij_count[1,2] = dim(data[(data[,1]==1 & data[,5]==1)|(data[,1]==1&is.na(data[,5])),])
-ij_count[2,1] = dim(data[(data[,2]==1 & data[,4]==1)|(data[,2]==1&is.na(data[,4])),])
-ij_count[2,2] = dim(data[(data[,2]==1 & data[,6]==1)|(data[,2]==1&is.na(data[,6])),])
+get_ij = function(cond){
+  ij_count = matrix(0, nrow=2, ncol=2)
+  ij_count[1,1] = dim(data[(data[,1]==1 & data[,3]==cond)|(data[,1]==1&is.na(data[,3])),])[1]
+  ij_count[1,2] = dim(data[(data[,1]==1 & data[,5]==cond)|(data[,1]==1&is.na(data[,5])),])[1]
+  ij_count[2,1] = dim(data[(data[,2]==1 & data[,4]==cond)|(data[,2]==1&is.na(data[,4])),])[1]
+  ij_count[2,2] = dim(data[(data[,2]==1 & data[,6]==cond)|(data[,2]==1&is.na(data[,6])),])[1]
 return (ij_count)
 }
-system.time(get_ij)
+ij_count = get_ij(1)
+notij_count = get_ij(0)
+get_i = function(cond){
+  i_count = matrix(0, nrow = 1,ncol = 2)
+  i_count[,1] = dim(data[data[,1]==1,])[1]
+  i_count[,2] = dim(data[data[,2]==1,])[1]
+return (i_count)
+}
+i_count = get_i()
+get_j = function(){
+  
+}
+
 ```
+
+```{r data.star: calculate j_count}
+# print(data.star[1:10,])
+j_count = matrix(0, nrow = 1, ncol = 2)
+notj_count  = matrix(0, nrow=1, ncol=2)
+for (indi in 1:nrow(data.star)){
+  denom = sum(data.star[indi,c(1,2)])
+  if (denom == 0){
+    next
+  }
+  else if (data.star[indi,c(3,4)]=NA){
+   denom = 1
+   j_count[1,1] = sum(data.star[indi, c(3,4)])
+  }
+  j_count[1,1] = 
+}
+print(data.star[1:10,])
+```
+
 
 ```{r calculate pi_ij, and pi_.i loop}
 ## Calculate pi_ij, pi_i., pi_.j
