@@ -11,21 +11,23 @@ output:
 knitr::opts_chunk$set(echo=FALSE)
 ```
 
-```{r, warning=FALSE}
-# The dependencies
-library(foreign)
-# library(tidyverse)
+```{r Loading packages, warning=FALSE}
+# library(foreign) # read in sav file
 # install.packages("magrittr") # package installations are only needed the first time you use it
 # install.packages("dplyr")    # alternative installation of the %>%
 library(magrittr) # needs to be run every time you start R and want to use %>%
+#install.packages('testit') # assert function
 library(testit)
+library(data.table)
+#install.packages('stringr')
+library(glue)
 ```
 
 
 # Generate Data for Simulation Experiment
 
 
-```{r}
+```{r Generate Data for Simulation Experiment}
 # knitr::opts_chunk$set(echo=FALSE, warning=TRUE)
 
 # Simulate data to test the power of the statistical test
@@ -61,8 +63,7 @@ ordery2 = cbind(ordery1, cumsum(ordery1[,2]))
 
 #-------------------------------------
 # Simulate data using computed marginal probabilities
-simulated_data = matrix(NA, nrow=500, ncol=6)
-colnames(simulated_data) = c('W1','W2','Y11','Y12','Y21','Y22')
+
 generate_y = function(proby, data, Uy, row, pos1){
   #' @description Generate simulated data for the Y variable using specified probabilities
   #' @param proby matrix. A 1x3 matrix containing cumulative probability and its corresponding cluster
@@ -87,7 +88,7 @@ generate_y = function(proby, data, Uy, row, pos1){
   }
   return(data)
 }
-generate_cluster = function(probw,proby, data, Uw, Uy1, Uy2, i, pos1, pos2, row){
+generate_cluster = function(probw,proby, Uw, Uy1, Uy2, i, pos1, pos2, row, data=NULL){
 #' @description Generate simulated data for W using spcified probabilities
 #' @param probw,proby matrix. A 1x3 matrix containing cumulative probability and its corresponding cluster
 #' @param data matrix. A 500x6 empty matrix to store simulated data
@@ -96,7 +97,10 @@ generate_cluster = function(probw,proby, data, Uw, Uy1, Uy2, i, pos1, pos2, row)
 #' @param i integer. A number specifying the row to fill in the data with
 #' @usage generated_cluster(prob, data, U)
 #' @return a 500x6 matrix that contains simulated data
-
+if(is.null(data)){
+data = matrix(NA, nrow=500, ncol=6)
+colnames(simulated_data) = c('W1','W2','Y11','Y12','Y21','Y22')
+}
   if (Uw >= probw[1,3] & Uw < probw[2,3]){
     data[i,1] = 0
     data[i,2] = 0
@@ -122,7 +126,7 @@ generate_cluster = function(probw,proby, data, Uw, Uy1, Uy2, i, pos1, pos2, row)
 }
 
 # Simulating Data for Experiment
-simulate_data = function(n=500){
+simulate_data = function(filepath, n=500){
 count = 0
 while (count < n){
   Uw = runif(1, 0, 1)
@@ -130,31 +134,120 @@ while (count < n){
   Uy2 = runif(1, 0, 1)
   simulated_data = generate_cluster(probw = orderw2, proby = ordery2, Uw = Uw, Uy1=Uy1, Uy2=Uy2, i= count+1, pos1=3, pos2=5, data=simulated_data)
   count=count+1
-}
-# Change the order of columns to reflect the true order of the data due to the way Y's were generated
-simulated_data[,c(1,2,3,4,5,6)] = simulated_data[,c(1,2,3,5,4,6)]
+  }
+  # Change the order of columns to reflect the true order of the data due to the way Y's were generated
+  simulated_data[,c(1,2,3,4,5,6)] = simulated_data[,c(1,2,3,5,4,6)]
+  # Save simulated data to filepath 
+  write.csv(simulated_data, file = filepath, row.names = FALSE)
+  return (simulated_data)
 }
 
-simulated_data = simulate_data()
-
-cat('The first five rows of simulated data:\n\n')
-print(simulated_data[1:5,])
-# Save simulated data to file
-write.csv(simulated_data, file = './simulated_data.csv', row.names = FALSE)
+# Execute create simulated data and save to filepath
+no = 1
+filepath = glue('./{no}.csv')
+print(filepath)
+simulated_data = simulate_data(filepath = filepath)
 ```
+
+```{r functions to calculate pi_ij, and pi_.i vectorize}
+get_ij = function(data, cond){
+  #' @description Calculate the count of ij
+  ij_count = matrix(0, nrow=2, ncol=2)
+  ij_count[1,1] = dim(data[(data[,1]==1 & data[,3]==cond)|(data[,1]==1&is.na(data[,3])),])[1]
+  ij_count[1,2] = dim(data[(data[,1]==1 & data[,5]==cond)|(data[,1]==1&is.na(data[,5])),])[1]
+  ij_count[2,1] = dim(data[(data[,2]==1 & data[,4]==cond)|(data[,2]==1&is.na(data[,4])),])[1]
+  ij_count[2,2] = dim(data[(data[,2]==1 & data[,6]==cond)|(data[,2]==1&is.na(data[,6])),])[1]
+return (ij_count)
+}
+get_i = function(data){
+  "Calculate the count of i"
+  i_count = matrix(0, nrow = 1,ncol = 2)
+  i_count[,1] = dim(data[data[,1]==1,])[1]
+  i_count[,2] = dim(data[data[,2]==1,])[1]
+return (i_count)
+}
+
+get_j = function(data, cols, cond, j, j_count = NULL){
+"Calculate the count of j"
+test_data = subset(data, (data[,cols[1]]==cond | data[,cols[2]]==cond))
+if (is.null(j_count)){
+j_count = matrix(0, nrow = 1, ncol = 2)
+}
+for (indi in 1:nrow(test_data)){
+  if (is.na(sum(data[indi,cols]))){
+   j_count[1,j] = j_count[1,j] + 1
+  }
+  else {
+    #[Solved When cond = 0 , the sum = 0 when it should be 1 or 2
+  j_count[1,j] = j_count[1,j] + sum(data[indi,cols]==cond) / 2
+  }
+}
+return (j_count)
+}
+# Calculate chi-squared statistics
+get_stats = function(data){
+ij_count1 = get_ij(data=data, cond= 1)
+notij_count1 = get_ij(data=data, cond= 0)
+i_count1 = get_i(data=data)
+yj_count1 = get_j(data=data, cols=c(5,6), cond=1, j=2)
+yj_count1 = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=j_count1)
+notj_count1 = get_j(data=data, cols=c(5,6), cond=0, j=2)
+notj_count1 = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
+pi_i. = i_count / n
+# the grand total proportion of yeses and nos for the ith, jth and ijth values
+yp_.j = y_nj / n
+np_.j = n_nj / n
+ypi_ij = ij_count / n
+npi_ij = notij_count / n
+# Grand-test stat
+yp_grandstat = sum((ypi_ij - t(pi_i.) %*% yp_.j)^2 / (t(pi_i.) %*% yp_.j))
+np_grandstat = sum((npi_ij - t(pi_i.) %*% np_.j)^2 / (t(pi_i.) %*% np_.j))
+return (grandstat = (yp_grandstat + np_grandstat) * n)
+}
+```
+
+```{r Read in data}
+# simulated_data = read.csv(')
+```
+
 # Generating bootstrapping data
-```{r, echo=FALSE}
-library(data.table)
-data = copy(simulated_data)
-X = 2
-n = dim(data)[1]
-end = dim(data)[2]
-W = sample(x=1:n,size=n,replace=TRUE)
-Y = sample(x=1:n,size=n,replace = TRUE)
-data.star = cbind(data[W,1:X],data[Y,(X+1):end])
-# Turn all w's answers of zero into nan-values
-zeros = which(data.star[,c(1,2)] == 0, arr.ind = TRUE)
-zeros[1:10,]
+```{r Generating bootstrapping data, echo=FALSE}
+# [TO DO] This is where I can implement parallel programming
+# cal_p_boot = function(data){
+# X = 2
+# n = dim(data)[1]
+# end = dim(data)[2]
+# W = sample(x=1:n,size=n,replace=TRUE)
+# Y = sample(x=1:n,size=n,replace = TRUE)
+# data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+# # Handling 0 values from W, turning corresponding Y values into NA
+# data.star[data.star[,'W1']==0, c(3,5)] = NA
+# data.star[data.star[,'W2']==0, c(4,6)] = NA
+# get_stats(data.star)
+# }
+cal_p_boot = function(data, X, B.max=1999, FUN=get_stats){
+  stat = FUN(data=data)
+  X.sq.S.star = numeric(length(B.max))
+  counter = 0
+  b = 0
+  while(b <= B.max){
+    b = b+1
+    n = dim(data)[1]
+    end = dim(data)[2]
+    W = sample(x=1:n,size=n,replace=TRUE)
+    Y = sample(x=1:n,size=n,replace = TRUE)
+    data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+    data.star[data.star[,'W1']==0, c(3,5)] = NA
+  data.star[data.star[,'W2']==0, c(4,6)] = NA
+    stat.star = FUN(data.star)
+    
+    counter = counter + 1
+    X.sq.S.star[counter] = stat.star
+  }
+  p.value.boot = mean(X.sq.S.star >= stat)
+  return(list(p_value=p.value.boot, X.sq=X.sq.S.star))
+}
+
 ```
 
 
@@ -178,8 +271,9 @@ print(data.star[1:10,])
 $X^2_{M} = n \sum^r_{i=1}\sum^c_{j=1}\frac{(\bar \pi_{ij} - \bar \pi_{i.} \bar\pi_{.j})^2}{\bar \pi_{i.} \bar\pi_{.j}}$
 
 ## Calculate $\pi_{ij}$ and $pi_{.i}$
-```{r calculate pi_ij, and pi_.i vectorize}
-get_ij = function(cond){
+```{r functions to calculate pi_ij, and pi_.i vectorize}
+get_ij = function(data, cond){
+  #' @description Calculate the count of ij
   ij_count = matrix(0, nrow=2, ncol=2)
   ij_count[1,1] = dim(data[(data[,1]==1 & data[,3]==cond)|(data[,1]==1&is.na(data[,3])),])[1]
   ij_count[1,2] = dim(data[(data[,1]==1 & data[,5]==cond)|(data[,1]==1&is.na(data[,5])),])[1]
@@ -187,39 +281,126 @@ get_ij = function(cond){
   ij_count[2,2] = dim(data[(data[,2]==1 & data[,6]==cond)|(data[,2]==1&is.na(data[,6])),])[1]
 return (ij_count)
 }
-ij_count = get_ij(1)
-notij_count = get_ij(0)
-get_i = function(cond){
+get_i = function(data){
+  "Calculate the count of i"
   i_count = matrix(0, nrow = 1,ncol = 2)
   i_count[,1] = dim(data[data[,1]==1,])[1]
   i_count[,2] = dim(data[data[,2]==1,])[1]
 return (i_count)
 }
-i_count = get_i()
-get_j = function(){
-  
-}
 
-```
-
-```{r data.star: calculate j_count}
-# print(data.star[1:10,])
+get_j = function(data, cols, cond, j, j_count = NULL){
+"Calculate the count of j"
+test_data = subset(data, (data[,cols[1]]==cond | data[,cols[2]]==cond))
+if (is.null(j_count)){
 j_count = matrix(0, nrow = 1, ncol = 2)
-notj_count  = matrix(0, nrow=1, ncol=2)
-for (indi in 1:nrow(data.star)){
-  denom = sum(data.star[indi,c(1,2)])
-  if (denom == 0){
-    next
-  }
-  else if (data.star[indi,c(3,4)]=NA){
-   denom = 1
-   j_count[1,1] = sum(data.star[indi, c(3,4)])
-  }
-  j_count[1,1] = 
 }
-print(data.star[1:10,])
+for (indi in 1:nrow(test_data)){
+  if (is.na(sum(data[indi,cols]))){
+   j_count[1,j] = j_count[1,j] + 1
+  }
+  else {
+    #[Solved When cond = 0 , the sum = 0 when it should be 1 or 2
+  j_count[1,j] = j_count[1,j] + sum(data[indi,cols]==cond) / 2
+  }
+}
+return (j_count)
+}
 ```
 
+```{r Calculate chi-squared statistics}
+get_stats = function(data){
+ij_count1 = get_ij(data=data, cond= 1)
+notij_count1 = get_ij(data=data, cond= 0)
+i_count1 = get_i(data=data)
+yj_count1 = get_j(data=data, cols=c(5,6), cond=1, j=2)
+yj_count1 = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=j_count1)
+notj_count1 = get_j(data=data, cols=c(5,6), cond=0, j=2)
+notj_count1 = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
+pi_i. = i_count / n
+# the grand total proportion of yeses and nos for the ith, jth and ijth values
+yp_.j = y_nj / n
+np_.j = n_nj / n
+ypi_ij = ij_count / n
+npi_ij = notij_count / n
+# Grand-test stat
+yp_grandstat = sum((ypi_ij - t(pi_i.) %*% yp_.j)^2 / (t(pi_i.) %*% yp_.j))
+np_grandstat = sum((npi_ij - t(pi_i.) %*% np_.j)^2 / (t(pi_i.) %*% np_.j))
+return (list(grandstat = (yp_grandstat + np_grandstat) * n, yes_stat = yp_grandstat, no_stat = np_grandstat))
+}
+# print(data.star[1:10,])
+```
+
+```{r comparing new vs old methods}
+  therap=therap
+  rec=rec
+  n=500
+  # i count matrices
+  i_count= matrix(0, nrow=1, ncol=therap)
+  pi_i.= matrix(0, nrow=1, ncol=therap)
+  # ij count matrices
+  ij_count = matrix(0, nrow=therap, ncol = rec)
+  notij_count = matrix(0, nrow=therap, ncol = rec)
+  # The count of individuals who pick jth recommendation source
+  y_nj = matrix(0,nrow=1,ncol=rec)
+  n_nj = matrix(0,nrow=1,ncol=rec)
+  # The prob estimation of y_nj and n_nj
+  yp_.j =  matrix(0,nrow=1,ncol=rec)
+  np_.j =  matrix(0,nrow=1,ncol=rec)
+  no = 2 #dimension of the matrix
+  for (indi in 1:n){
+    for (i in 1:therap){
+      if (data[indi,i]==0)
+        next
+      else {
+        # Counting the number of individuals who pick jth therapy to calculate pi_.i
+        i_count[,i] = i_count[,i] + 1
+        # Iterating through each therapy, count the participants who pick the jth recommendation to calculate pi_ij
+        for (j in 1:rec){
+          if (data[indi,therap+i+(j-1)*rec]==1){
+            ij_count[i,j] = ij_count[i,j] + 1
+          }
+          else {
+            notij_count[i,j] = notij_count[i,j] + 1
+            # Remember to check to sum of ij_count 
+          }
+          
+        }
+        
+      }
+    }
+    # for the real dataset, use sum of not nan values
+    y_denominator = sum(data[indi,1:therap]==1)
+    #assert("Cannot be zero", y_denominator != 0)
+    if (y_denominator == 0){
+      next()
+    }
+    else {
+      for (j in 1:rec){
+        # Count the individuals who pick jth recommendation source
+        # Only count when that individual specifies their ith therapy pick
+        # first remove na from consideration
+        ycond = data[indi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1
+        ncond = data[indi,(therap+1+(j-1)*rec):(therap+ j*rec)]==0
+        # the numerator is the number of y's or no's 
+        ynj_numerator = sum(ycond[which(!is.na(ycond))])
+        nnj_numerator = sum(ncond[which(!is.na(ncond))])
+        assert('should not be nan values', !is.na(ynj_numerator))
+        assert('Should not be nan values', !is.na(nnj_numerator))
+        assert("Your .j count is not correct!", ynj_numerator + nnj_numerator == y_denominator)
+        # Count the individuals who specify their jth recommendation source choice
+        y_nj[,j] = y_nj[,j] + ynj_numerator / y_denominator
+        n_nj[,j] = n_nj[,j] + nnj_numerator / y_denominator
+      }
+    }
+  }
+    pi_i. = i_count / n
+  # the grand total proportion of yeses and nos for the ith, jth and ijth values
+  yp_.j = y_nj / n
+  np_.j = n_nj / n
+  ypi_ij = ij_count / n
+  npi_ij = notij_count / n
+```
 
 ```{r calculate pi_ij, and pi_.i loop}
 ## Calculate pi_ij, pi_i., pi_.j
@@ -271,45 +452,6 @@ for (i in 1:therap){
 yindi = 2
 j = 1
 cat(data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1)
-
-```
-
-```{r}
-### Calculate pi_.j
-## Initialize variables with res = pi_ij(data, therap, rec)
-therap = 2
-rec = 2
-therap=therap
-rec=rec
-n=500
-
-y_ij = matrix(0, nrow=therap, ncol=rec)
-n_ij = matrix(0, nrow=therap, ncol=rec)
-y_nj = matrix(0,nrow=1,ncol=rec)
-n_nj = matrix(0,nrow=1,ncol=rec)
-for (i in 1:therap){
-# y_denominator = sum(data[indi,1:therap]==1)
-# #assert("Cannot be zero", y_denominator != 0)
-# if (y_denominator == 0){
-#   next()
-  yind = which(data[,i]==1)
-}
-  for (j in 1:rec){
-    # Count the individuals who pick jth recommendation source
-    # Only count when that individual specifies their ith therapy pick
-    # first remove na from consideration
-    ycond = data[indi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1
-    ncond = data[indi,(therap+1+(j-1)*rec):(therap+ j*rec)]==0
-    # the numerator is the number of y's or no's 
-    ynj_numerator = sum(ycond[which(!is.na(ycond))])
-    nnj_numerator = sum(ncond[which(!is.na(ncond))])
-    assert('should not be nan values', !is.na(ynj_numerator))
-    assert('Should not be nan values', !is.na(nnj_numerator))
-    assert("Your .j count is not correct!", ynj_numerator + nnj_numerator == y_denominator)
-    # Count the individuals who specify their jth recommendation source choice
-    y_nj[,j] = y_nj[,j] + ynj_numerator / y_denominator
-    n_nj[,j] = n_nj[,j] + nnj_numerator / y_denominator
-  }
 
 ```
 
@@ -394,6 +536,7 @@ temp_X_cal= function(data, therap, rec){
   np_grandstat = sum((npi_ij - t(pi_i.) %*% np_.j)^2 / (t(pi_i.) %*% np_.j))
   return (list(grandstat = (yp_grandstat + np_grandstat) * n, yes_stat = yp_grandstat, no_stat = np_grandstat))
 }
+res = temp_X_cal(data=simulated_data,therap=2,rec=2)
 ```
 
 # Bootstrapping Method
