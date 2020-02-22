@@ -165,7 +165,7 @@ get_ij = function(data, cond){
 return (ij_count)
 }
 get_i = function(data){
-  "Calculate the count of i"
+  #' @description Calculate the count of i
   i_count = matrix(0, nrow = 1,ncol = 2)
   i_count[,1] = dim(data[data[,1]==1,])[1]
   i_count[,2] = dim(data[data[,2]==1,])[1]
@@ -195,25 +195,72 @@ ij_count1 = get_ij(data=data, cond= 1)
 notij_count1 = get_ij(data=data, cond= 0)
 i_count1 = get_i(data=data)
 yj_count1 = get_j(data=data, cols=c(5,6), cond=1, j=2)
-yj_count1 = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=j_count1)
+yj_count1 = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
 notj_count1 = get_j(data=data, cols=c(5,6), cond=0, j=2)
 notj_count1 = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
-pi_i. = i_count / n
+pi_i. = i_count1 / n
 # the grand total proportion of yeses and nos for the ith, jth and ijth values
-yp_.j = y_nj / n
-np_.j = n_nj / n
-ypi_ij = ij_count / n
-npi_ij = notij_count / n
+yp_.j = yj_count1 / n
+np_.j = notj_count1 / n
+ypi_ij = ij_count1 / n
+npi_ij = notij_count1 / n
 # Grand-test stat
 yp_grandstat = sum((ypi_ij - t(pi_i.) %*% yp_.j)^2 / (t(pi_i.) %*% yp_.j))
 np_grandstat = sum((npi_ij - t(pi_i.) %*% np_.j)^2 / (t(pi_i.) %*% np_.j))
-return (grandstat = (yp_grandstat + np_grandstat) * n)
+return (list(grandstat = (yp_grandstat + np_grandstat) * n, yp_grandstat = yp_grandstat, np_grandstat = np_grandstat))
 }
 ```
 
 ```{r Read in data}
-# simulated_data = read.csv(')
+simulated_data = read.csv('1.csv')
+data = copy(simulated_data)
+n = dim(data)[1]
+ij_count = get_ij(data=data, cond= 1)
+notij_count = get_ij(data=data, cond= 0)
+i_count = get_i(data=data)
+yj_count = get_j(data=data, cols=c(5,6), cond=1, j=2)
+yj_count = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
+notj_count = get_j(data=data, cols=c(5,6), cond=0, j=2)
+notj_count = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
+pi1_i. = i_count / n
+# the grand total proportion of yeses and nos for the ith, jth and ijth values
+yp1_.j = yj_count / n
+np1_.j = notj_count / n
+ypi1_ij = ij_count / n
+npi1_ij = notij_count / n
+yp_grandstat1 = sum((ypi1_ij - t(pi1_i.) %*% yp1_.j)^2 / (t(pi1_i.) %*% yp1_.j))
+np_grandstat1 = sum((npi1_ij - t(pi1_i.) %*% np1_.j)^2 / (t(pi1_i.) %*% np1_.j))
+grandstat1 = (yp_grandstat1 + np_grandstat1) * n
 ```
+
+```{r Get i,j,ij for data.star}
+data = copy(simulated_data)
+n = dim(data)[1]
+end = dim(data)[2]
+W = sample(x=1:n,size=n,replace=TRUE)
+Y = sample(x=1:n,size=n,replace = TRUE)
+X=2
+data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+data.star[data.star[,'W1']==0, c(3,5)] = NA
+data.star[data.star[,'W2']==0, c(4,6)] = NA
+ij_count1 = get_ij(data=data.star, cond= 1)
+notij_count1 = get_ij(data=data.star, cond= 0)
+i_count1 = get_i(data=data.star)
+yj_count1 = get_j(data=data.star, cols=c(5,6), cond=1, j=2)
+yj_count1 = get_j(data=data.star, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
+notj_count1 = get_j(data=data.star, cols=c(5,6), cond=0, j=2)
+notj_count1 = get_j(data=data.star, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
+pi_i. = i_count1 / n
+# the grand total proportion of yeses and nos for the ith, jth and ijth values
+yp_.j = yj_count1 / n
+np_.j = notj_count1 / n
+ypi_ij = ij_count1 / n
+npi_ij = notij_count1 / n
+yp_grandstat = sum((ypi_ij - t(pi_i.) %*% yp_.j)^2 / (t(pi_i.) %*% yp_.j))
+np_grandstat = sum((npi_ij - t(pi_i.) %*% np_.j)^2 / (t(pi_i.) %*% np_.j))
+grandstat = (yp_grandstat + np_grandstat) * n
+```
+
 
 ```{r Get grand stats}
 get_stats(data=simulated_data)
@@ -248,7 +295,7 @@ cal_p_boot = function(data, X, B.max=100, FUN=get_stats){
     data.star = cbind(data[W,1:X],data[Y,(X+1):end])
     data.star[data.star[,'W1']==0, c(3,5)] = NA
     data.star[data.star[,'W2']==0, c(4,6)] = NA
-    stat.star = FUN(data.star)
+    stat.star = FUN(data.star)[1]
     
     counter = counter + 1
     X.sq.S.star[counter] = stat.star
@@ -259,16 +306,35 @@ cal_p_boot = function(data, X, B.max=100, FUN=get_stats){
 cal_p_boot(simulated_data, X=2)
 
 ```
+
 ```{r test cal_p_boot function}
 data = copy(simulated_data)
-stat = get_stats(data=simulated_data)
+stat = get_stats(data=simulated_data)[1]
+
 B.max = 100
 X.sq.S.star = numeric(length(B.max))
 counter = 0
 b = 0
+# while(b <= B.max){
+b = b+1
 n = dim(data)[1]
 end = dim(data)[2]
+W = sample(x=1:n,size=n,replace=TRUE)
+Y = sample(x=1:n,size=n,replace = TRUE)
+data.star = cbind(data[W,1:X],data[Y,(X+1):end])
+data.star[data.star[,'W1']==0, c(3,5)] = NA
+data.star[data.star[,'W2']==0, c(4,6)] = NA
+stat.star = get_stats(data.star)[1]
+counter = counter + 1
+X.sq.S.star[counter] = stat.star
+# }
+p.value.boot = mean(X.sq.S.star >= stat)
 
+```
+
+```{r}
+# get_stats(simulated_data)
+get_i(data.star)
 
 ```
 
@@ -481,6 +547,7 @@ cat(data[yindi,(therap+1+(j-1)*rec):(therap+ j*rec)]==1)
 
 ```{r}
 ###------------------------------------------------------------------------------------------
+
 temp_X_cal= function(data, therap, rec){
   # In this dataset, 1 means yes and 0 means no
   therap=therap
@@ -559,7 +626,7 @@ temp_X_cal= function(data, therap, rec){
   np_grandstat = sum((npi_ij - t(pi_i.) %*% np_.j)^2 / (t(pi_i.) %*% np_.j))
   return (list(grandstat = (yp_grandstat + np_grandstat) * n, yes_stat = yp_grandstat, no_stat = np_grandstat))
 }
-res = temp_X_cal(data=simulated_data,therap=2,rec=2)
+temp_X_cal(data=simulated_data,therap=2,rec=2)
 ```
 
 # Bootstrapping Method
