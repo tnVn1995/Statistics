@@ -21,6 +21,7 @@ library(testit)
 library(data.table)
 #install.packages('stringr')
 library(glue)
+
 ```
 
 
@@ -99,7 +100,7 @@ generate_cluster = function(probw,proby, Uw, Uy1, Uy2, i, pos1, pos2, row, data=
 #' @return a 500x6 matrix that contains simulated data
 if(is.null(data)){
 data = matrix(NA, nrow=500, ncol=6)
-colnames(simulated_data) = c('W1','W2','Y11','Y12','Y21','Y22')
+colnames(data) = c('W1','W2','Y11','Y12','Y21','Y22')
 }
   if (Uw >= probw[1,3] & Uw < probw[2,3]){
     data[i,1] = 0
@@ -127,7 +128,11 @@ colnames(simulated_data) = c('W1','W2','Y11','Y12','Y21','Y22')
 
 # Simulating Data for Experiment
 simulate_data = function(filepath, n=500){
-count = 0
+count = 1
+Uw = runif(1, 0, 1)
+Uy1 = runif(1, 0, 1)
+Uy2 = runif(1, 0, 1)
+simulated_data = generate_cluster(probw = orderw2, proby = ordery2, Uw = Uw, Uy1=Uy1, Uy2=Uy2, i= count, pos1=3, pos2=5)
 while (count < n){
   Uw = runif(1, 0, 1)
   Uy1 = runif(1, 0, 1)
@@ -210,6 +215,10 @@ return (grandstat = (yp_grandstat + np_grandstat) * n)
 # simulated_data = read.csv(')
 ```
 
+```{r Get grand stats}
+get_stats(data=simulated_data)
+```
+
 # Generating bootstrapping data
 ```{r Generating bootstrapping data, echo=FALSE}
 # [TO DO] This is where I can implement parallel programming
@@ -225,7 +234,7 @@ return (grandstat = (yp_grandstat + np_grandstat) * n)
 # data.star[data.star[,'W2']==0, c(4,6)] = NA
 # get_stats(data.star)
 # }
-cal_p_boot = function(data, X, B.max=1999, FUN=get_stats){
+cal_p_boot = function(data, X, B.max=100, FUN=get_stats){
   stat = FUN(data=data)
   X.sq.S.star = numeric(length(B.max))
   counter = 0
@@ -238,7 +247,7 @@ cal_p_boot = function(data, X, B.max=1999, FUN=get_stats){
     Y = sample(x=1:n,size=n,replace = TRUE)
     data.star = cbind(data[W,1:X],data[Y,(X+1):end])
     data.star[data.star[,'W1']==0, c(3,5)] = NA
-  data.star[data.star[,'W2']==0, c(4,6)] = NA
+    data.star[data.star[,'W2']==0, c(4,6)] = NA
     stat.star = FUN(data.star)
     
     counter = counter + 1
@@ -247,10 +256,24 @@ cal_p_boot = function(data, X, B.max=1999, FUN=get_stats){
   p.value.boot = mean(X.sq.S.star >= stat)
   return(list(p_value=p.value.boot, X.sq=X.sq.S.star))
 }
+cal_p_boot(simulated_data, X=2)
+
+```
+```{r test cal_p_boot function}
+data = copy(simulated_data)
+stat = get_stats(data=simulated_data)
+B.max = 100
+X.sq.S.star = numeric(length(B.max))
+counter = 0
+b = 0
+n = dim(data)[1]
+end = dim(data)[2]
+
 
 ```
 
 
+# This portion onward is irrelevant
 ```{r Handling Zero Values}
 # Turn corresponding values o Y for W answer of 0's into nan
 therap = 2
