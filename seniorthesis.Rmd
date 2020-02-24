@@ -158,10 +158,10 @@ simulated_data = simulate_data(filepath = filepath)
 get_ij = function(data, cond){
   #' @description Calculate the count of ij
   ij_count = matrix(0, nrow=2, ncol=2)
-  ij_count[1,1] = dim(data[(data[,1]==1 & data[,3]==cond)|(data[,1]==1&is.na(data[,3])),])[1]
-  ij_count[1,2] = dim(data[(data[,1]==1 & data[,5]==cond)|(data[,1]==1&is.na(data[,5])),])[1]
-  ij_count[2,1] = dim(data[(data[,2]==1 & data[,4]==cond)|(data[,2]==1&is.na(data[,4])),])[1]
-  ij_count[2,2] = dim(data[(data[,2]==1 & data[,6]==cond)|(data[,2]==1&is.na(data[,6])),])[1]
+  ij_count[1,1] = dim(subset(data,(data[,1]==1 & data[,3]==cond)))[1]
+  ij_count[1,2] = dim(subset(data,(data[,1]==1 & data[,5]==cond)))[1]
+  ij_count[2,1] = dim(subset(data,(data[,2]==1 & data[,4]==cond)))[1]
+  ij_count[2,2] = dim(subset(data,(data[,2]==1 & data[,6]==cond)))[1]
 return (ij_count)
 }
 get_i = function(data){
@@ -219,9 +219,9 @@ ij_count = get_ij(data=data, cond= 1)
 notij_count = get_ij(data=data, cond= 0)
 i_count = get_i(data=data)
 yj_count = get_j(data=data, cols=c(5,6), cond=1, j=2)
-yj_count = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
+yj_count = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=yj_count)
 notj_count = get_j(data=data, cols=c(5,6), cond=0, j=2)
-notj_count = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
+notj_count = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count)
 pi1_i. = i_count / n
 # the grand total proportion of yeses and nos for the ith, jth and ijth values
 yp1_.j = yj_count / n
