@@ -173,7 +173,7 @@ return (i_count)
 }
 
 get_j = function(data, cols, cond, j, j_count = NULL){
-"Calculate the count of j"
+  #' @description Calculate the count of j
 test_data = subset(data, (data[,cols[1]]==cond | data[,cols[2]]==cond))
 if (is.null(j_count)){
 j_count = matrix(0, nrow = 1, ncol = 2)
@@ -215,19 +215,19 @@ return (list(grandstat = (yp_grandstat + np_grandstat) * n, yp_grandstat = yp_gr
 simulated_data = read.csv('1.csv')
 data = copy(simulated_data)
 n = dim(data)[1]
-ij_count = get_ij(data=data, cond= 1)
-notij_count = get_ij(data=data, cond= 0)
-i_count = get_i(data=data)
-yj_count = get_j(data=data, cols=c(5,6), cond=1, j=2)
-yj_count = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
-notj_count = get_j(data=data, cols=c(5,6), cond=0, j=2)
-notj_count = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
-pi1_i. = i_count / n
+ij_count1 = get_ij(data=data, cond= 1)
+notij_count1 = get_ij(data=data, cond= 0)
+i_count1 = get_i(data=data)
+yj_count1 = get_j(data=data, cols=c(5,6), cond=1, j=2)
+yj_count1 = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
+notj_count1 = get_j(data=data, cols=c(5,6), cond=0, j=2)
+notj_count1 = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
+pi1_i. = i_count1 / n
 # the grand total proportion of yeses and nos for the ith, jth and ijth values
-yp1_.j = yj_count / n
-np1_.j = notj_count / n
-ypi1_ij = ij_count / n
-npi1_ij = notij_count / n
+yp1_.j = yj_count1 / n
+np1_.j = notj_count1 / n
+ypi1_ij = ij_count1 / n
+npi1_ij = notij_count1 / n
 yp_grandstat1 = sum((ypi1_ij - t(pi1_i.) %*% yp1_.j)^2 / (t(pi1_i.) %*% yp1_.j))
 np_grandstat1 = sum((npi1_ij - t(pi1_i.) %*% np1_.j)^2 / (t(pi1_i.) %*% np1_.j))
 grandstat1 = (yp_grandstat1 + np_grandstat1) * n
@@ -243,19 +243,19 @@ X=2
 data.star = cbind(data[W,1:X],data[Y,(X+1):end])
 data.star[data.star[,'W1']==0, c(3,5)] = NA
 data.star[data.star[,'W2']==0, c(4,6)] = NA
-ij_count1 = get_ij(data=data.star, cond= 1)
-notij_count1 = get_ij(data=data.star, cond= 0)
-i_count1 = get_i(data=data.star)
-yj_count1 = get_j(data=data.star, cols=c(5,6), cond=1, j=2)
-yj_count1 = get_j(data=data.star, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
-notj_count1 = get_j(data=data.star, cols=c(5,6), cond=0, j=2)
-notj_count1 = get_j(data=data.star, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
-pi_i. = i_count1 / n
+ij_count = get_ij(data=data.star, cond= 1)
+notij_count = get_ij(data=data.star, cond= 0)
+i_count = get_i(data=data.star)
+yj_count = get_j(data=data.star, cols=c(5,6), cond=1, j=2)
+yj_count = get_j(data=data.star, cols=c(3,4), cond=1, j=1, j_count=yj_count)
+notj_count = get_j(data=data.star, cols=c(5,6), cond=0, j=2)
+notj_count = get_j(data=data.star, cols=c(3,4), cond=0, j=1, j_count=notj_count)
+pi_i. = i_count / n
 # the grand total proportion of yeses and nos for the ith, jth and ijth values
-yp_.j = yj_count1 / n
-np_.j = notj_count1 / n
-ypi_ij = ij_count1 / n
-npi_ij = notij_count1 / n
+yp_.j = yj_count / n
+np_.j = notj_count / n
+ypi_ij = ij_count / n
+npi_ij = notij_count / n
 yp_grandstat = sum((ypi_ij - t(pi_i.) %*% yp_.j)^2 / (t(pi_i.) %*% yp_.j))
 np_grandstat = sum((npi_ij - t(pi_i.) %*% np_.j)^2 / (t(pi_i.) %*% np_.j))
 grandstat = (yp_grandstat + np_grandstat) * n
