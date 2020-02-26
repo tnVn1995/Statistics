@@ -3,6 +3,8 @@
 *.png
 *.zip
 *.pptx
-*.pdf
 *.csv
 *.Rhistory
+.RData
+.Rhistory
+*.txt
