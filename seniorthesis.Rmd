@@ -3,9 +3,10 @@ title: "Senior Thesis"
 author: "Tung Nguyen"
 date: "2/9/2020"
 output:
-  html_document: default
+  md_document: default
   pdf_document: default
   word_document: default
+  html_document: default
 ---
 ```{r include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo=FALSE, comment=FALSE, include=FALSE)
