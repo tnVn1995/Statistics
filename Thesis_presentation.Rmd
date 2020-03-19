@@ -26,6 +26,134 @@ $~~~~$A simultaneous pairwise marginal independence (SPMI) test is performed to 
 
 Let W and Y denote the multiple-response categorical variables for an r x c table. Correspondingly, W and Y refer to waste storage methods and sources of veterinary information, respectively. 
 
+## Real Data analysis
+```{r echo=FALSE, comment=FALSE}
+knitr::opts_chunk$set(echo=FALSE, comment=FALSE)
+
+```
+
+```{r include= FALSE}
+library(foreign)
+library(tidyverse)
+file_path = 'C:/Users/ngu09790/OneDrive - Texas Tech University/Summer_Project/2012 NHIS Adult Sample_CAM_HIT paper 2017-2-17.sav'
+data = read.spss(file_path, to.data.frame=TRUE)
+real_data = data %>% select('TP1_REC1', 'TP1_REC2', 'TP1_REC3', 'TP1_REC4','TP2_REC1', 'TP2_REC2', 'TP2_REC3', 'TP2_REC4',
+                         'TP3_REC1', 'TP3_REC2', 'TP3_REC3', 'TP3_REC4','ALT_TP31', 'ALT_TP32', 'ALT_TP33')
+
+```
+
+
+```{r}
+# head(real_data)
+numerical_data = real_data
+shouldbeCateg = c(13,14,15)
+for (i in colnames(numerical_data)){
+  numerical_data[,i] = as.numeric(unlist(numerical_data[,i]))
+}
+View(numerical_data)
+```
+
+```{r utility functions}
+get_ij = function(data, cond, w, y){
+  #' @description Calculate the count of ij
+  #' @param data data for processing
+  #' @param cond filtering condition
+  #' @param w    number of responses for factor W
+  #' @param y    number of responses for factor y
+  # [TO DO] - Redesign functions to calculate stats from real data
+  ij_count = matrix(0, nrow=w, ncol=y)
+  for (i in 1:w){
+    # print(i)
+    for (j in seq((w+i),(w+w*y),by=y)){
+      # print(j)
+      ij_count[i,j] = dim(subset(data, (data[,i]==1 & data[,j]==cond)))[1]
+    }
+  }
+  # ij_count[1,1] = dim(subset(data,(data[,1]==1 & data[,3]==cond)))[1]
+  # ij_count[1,2] = dim(subset(data,(data[,1]==1 & data[,5]==cond)))[1]
+  # ij_count[2,1] = dim(subset(data,(data[,2]==1 & data[,4]==cond)))[1]
+  # ij_count[2,2] = dim(subset(data,(data[,2]==1 & data[,6]==cond)))[1]
+return (ij_count)
+}
+get_i = function(data){
+  #' @description Calculate the count of i
+  i_count = matrix(0, nrow = 1,ncol = 2)
+  i_count[,1] = dim(data[data[,1]==1,])[1]
+  i_count[,2] = dim(data[data[,2]==1,])[1]
+return (i_count)
+}
+
+get_j = function(data, cols, cond, j, j_count = NULL){
+  #' @description Calculate the count of j
+test_data = subset(data, (data[,cols[1]]==cond | data[,cols[2]]==cond))
+if (is.null(j_count)){
+j_count = matrix(0, nrow = 1, ncol = 2)
+}
+for (indi in 1:nrow(test_data)){
+  if (is.na(sum(data[indi,cols]))){
+   j_count[1,j] = j_count[1,j] + 1
+  }
+  else {
+    #[Solved When cond = 0 , the sum = 0 when it should be 1 or 2
+  j_count[1,j] = j_count[1,j] + sum(data[indi,cols]==cond) / 2
+  }
+}
+return (j_count)
+}
+# Calculate chi-squared statistics
+get_stats = function(data, sequence=FALSE){
+  n = dim(data)[1]
+  ij_count1 = get_ij(data=data, cond= 1)
+  notij_count1 = get_ij(data=data, cond= 0)
+  i_count1 = get_i(data=data)
+  yj_count1 = get_j(data=data, cols=c(5,6), cond=1, j=2)
+  yj_count1 = get_j(data=data, cols=c(3,4), cond=1, j=1, j_count=yj_count1)
+  notj_count1 = get_j(data=data, cols=c(5,6), cond=0, j=2)
+  notj_count1 = get_j(data=data, cols=c(3,4), cond=0, j=1, j_count=notj_count1)
+  pi1_i. = i_count1 / n
+  # the grand total proportion of yeses and nos for the ith, jth and ijth values
+  yp1_.j = yj_count1 / n
+  np1_.j = notj_count1 / n
+  ypi1_ij = ij_count1 / n
+  npi1_ij = notij_count1 / n
+  yp_grandstat1 = sum((ypi1_ij - t(pi1_i.) %*% yp1_.j)^2 / (t(pi1_i.) %*% yp1_.j))
+  np_grandstat1 = sum((npi1_ij - t(pi1_i.) %*% np1_.j)^2 / (t(pi1_i.) %*% np1_.j))
+  grandstat1 = (yp_grandstat1 + np_grandstat1) * n
+  if (sequence==TRUE){
+    return (list(grandstat = grandstat1, yp_grandstat = yp_grandstat1, np_grandstat = np_grandstat1))
+  }
+  else {
+    return (grandstat1)
+}
+}
+
+# [TODO]: Sample from only non-nan values for W, Y
+cal_p_boot = function(data, X, B.max=1999, FUN=get_stats){
+  stat = FUN(data=data)
+  X.sq.S.star = numeric(length(B.max))
+  counter = 0
+  b = 0
+  while(b <= B.max){
+    b = b+1
+    n = dim(data)[1]
+    end = dim(data)[2]
+    W = sample(x=1:n,size=n,replace=TRUE)
+    c3 = sample(data[!is.na(data[,3]),3], size=n, replace = TRUE)
+    c4 = sample(data[!is.na(data[,4]),4], size=n, replace = TRUE)
+    c5 = sample(data[!is.na(data[,5]),5], size=n, replace = TRUE)
+    c6 = sample(data[!is.na(data[,6]),6], size=n, replace = TRUE)
+    data.star = cbind(data[W,1:X],c3,c4,c5,c6)
+    data.star[data.star[,'W1']==0, c(3,5)] = NA
+    data.star[data.star[,'W2']==0, c(4,6)] = NA
+    stat.star = FUN(data.star)[1]
+    
+    counter = counter + 1
+    X.sq.S.star[counter] = stat.star
+  }
+  p.value.boot = mean(X.sq.S.star >= stat)
+  return(list(p_value=p.value.boot, X.sq=X.sq.S.star))
+}
+```
 
 
 
