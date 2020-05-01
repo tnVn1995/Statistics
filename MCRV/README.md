@@ -1,4 +1,4 @@
-# Senior Thesis - Multiple Categorical Random Variable
+# Senior Thesis - Multiple Categorical Random Variable (Incomplete)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mind and body practices may be used to improve health and 
 well-being or to help manage symptoms of health problems. The 2012 National Health Interview Survey 
 collected information about Americans’ top 3 commonly used modalities and whether using each modality 
